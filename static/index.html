@@ -2,65 +2,33 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>AI Voice Agent - Day 1</title>
+    <title>AI Voice Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="static/style.css" rel="stylesheet" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <style>
-      body {
-        font-family: "Roboto", sans-serif;
-        background-color: #f4f6f9;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-      }
-
-      h1 {
-        color: #2c3e50;
-        font-size: 2rem;
-        margin-bottom: 10px;
-      }
-
-      p {
-        color: #555;
-        margin-bottom: 30px;
-      }
-
-      button {
-        padding: 12px 24px;
-        background-color: #3498db;
-        border: none;
-        border-radius: 8px;
-        color: white;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      button:hover {
-        background-color: #2980b9;
-      }
-
-      footer {
-        position: absolute;
-        bottom: 20px;
-        font-size: 0.85rem;
-        color: #888;
-      }
-    </style>
   </head>
   <body>
-    <h1>Welcome to My AI Voice Agent Project</h1>
-    <p>Day 1: Setting up the frontend & backend using FastAPI</p>
-    <button onclick="sayHello()">Test Voice Agent</button>
+    <div class="container">
+      <h1>AI Voice Generator 🎙</h1>
 
-    <footer>#30DaysOfAI | Built with ❤️ using FastAPI</footer>
+      <textarea
+        id="textInput"
+        placeholder="Enter your message here..."
+      ></textarea>
 
-    <script src="/static/script.js"></script>
+      <button id="generateBtn" onclick="generateAudio()">Generate Audio</button>
+
+      <div class="loader" id="loader" style="display: none"></div>
+
+      <div id="audioContainer" style="display: none">
+        <h3>🔊 Your AI Audio:</h3>
+        <audio id="audioPlayer" controls></audio>
+      </div>
+    </div>
+
+    <script src="static/script.js"></script>
   </body>
 </html>
