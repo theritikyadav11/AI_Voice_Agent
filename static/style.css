@@ -1,59 +1,77 @@
-body {
+/* Reset & Base Styles */
+* {
   margin: 0;
   padding: 0;
-  font-family: 'Outfit', sans-serif;
-  background: linear-gradient(to right, #1c1f26, #3a3f51);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
+  box-sizing: border-box;
 }
 
+body {
+  font-family: 'Outfit', sans-serif;
+  background: linear-gradient(to right, #141e30, #243b55);
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+/* Main vertical wrapper for both sections */
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 50px;
+  width: 100%;
+}
+
+/* Container for AI Voice Generator */
 .container {
-  text-align: center;
-  background-color: rgba(255, 255, 255, 0.03);
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 0 25px rgba(0, 255, 255, 0.1);
-  width: 90%;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 40px 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.1);
+  width: 100%;
   max-width: 500px;
+  margin: 20px;
+  text-align: center;
 }
 
 h1 {
+  font-size: 2rem;
   margin-bottom: 20px;
-  font-size: 1.8rem;
+  color: #ffffff;
 }
 
 textarea {
   width: 100%;
   height: 120px;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 15px;
   font-size: 1rem;
   border: none;
   outline: none;
   resize: none;
-  background-color: #f2f2f2;
+  background-color: #f9f9f9;
   color: #333;
-  font-family: 'Outfit', sans-serif;
 }
 
 button {
   margin-top: 20px;
-  padding: 12px 24px;
+  padding: 14px 30px;
   font-size: 1rem;
   font-weight: bold;
   border: none;
+  border-radius: 12px;
   background: linear-gradient(135deg, #00f2fe, #4facfe);
   color: #fff;
-  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 button:hover {
   background: linear-gradient(135deg, #4facfe, #00f2fe);
+  transform: scale(1.03);
 }
 
 .loader {
@@ -74,5 +92,112 @@ button:hover {
 
 audio {
   width: 100%;
+  margin-top: 20px;
+}
+
+
+
+/* Echo Bot Styles */
+.wrapper {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 40px 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.1);
+  width: 100%;
+  max-width: 500px;
+  margin: 20px;
+  text-align: center;
+  flex: 1;
+  margin-bottom: 150px;
+}
+
+.wrapper h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #ffffff;
+}
+
+.main-controls {
+  margin-bottom: 20px;
+}
+
+.visualizer {
+  display: block;
+  width: 100%;
+  background-color: #f2f2f2;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+#buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#buttons button {
+  width: 100%;
+  padding: 12px;
+  background: #4facfe;
+  color: white;
+  border-radius: 10px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+#buttons button:hover {
+  background: #00f2fe;
+  transform: scale(1.03);
+}
+
+.sound-clips {
+  margin-top: 20px;
+  text-align: left;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.clip {
+  margin-bottom: 20px;
+}
+
+.clip p {
+  display: inline-block;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.clip button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.clip button:hover {
+  background-color: #d32f2f;
+}
+
+audio {
+  width: 100%;
+  display: block;
   margin-top: 10px;
+}
+
+/* Responsive Tweaks */
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .container,
+  .wrapper {
+    max-width: 100%;
+  }
 }

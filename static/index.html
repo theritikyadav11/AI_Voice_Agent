@@ -11,21 +11,43 @@
     />
   </head>
   <body>
-    <div class="container">
-      <h1>AI Voice Generator 🎙</h1>
+    <div class="main">
+      <!-- Text to speech part -->
+      <div class="container">
+        <h1>AI Voice Generator 🎙</h1>
 
-      <textarea
-        id="textInput"
-        placeholder="Enter your message here..."
-      ></textarea>
+        <textarea
+          id="textInput"
+          placeholder="Enter your message here..."
+        ></textarea>
 
-      <button id="generateBtn" onclick="generateAudio()">Generate Audio</button>
+        <button id="generateBtn" onclick="generateAudio()">
+          Generate Audio
+        </button>
 
-      <div class="loader" id="loader" style="display: none"></div>
+        <div class="loader" id="loader" style="display: none"></div>
 
-      <div id="audioContainer" style="display: none">
-        <h3>🔊 Your AI Audio:</h3>
-        <audio id="audioPlayer" controls></audio>
+        <div id="audioContainer" style="display: none">
+          <h3>🔊 Your AI Audio:</h3>
+          <audio id="audioPlayer" controls></audio>
+        </div>
+      </div>
+
+      <!-- Echo Bot -->
+      <div class="wrapper">
+        <header>
+          <h1>Echo Bot</h1>
+        </header>
+
+        <section class="main-controls">
+          <canvas class="visualizer" height="60px"></canvas>
+          <div id="buttons">
+            <button class="record">Record</button>
+            <button class="stop">Stop</button>
+          </div>
+        </section>
+
+        <section class="sound-clips"></section>
       </div>
     </div>
 
