@@ -1,6 +1,8 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+import shutil
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
@@ -11,6 +13,14 @@ load_dotenv()
 MURF_API_KEY = os.getenv("MURF_API_KEY")
 
 app = FastAPI()
+
+# Allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Mount static files (your HTML & JS)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -67,4 +77,20 @@ async def generate_tts(request: TTSRequest):
         return JSONResponse(status_code=e.response.status_code, content={"error": e.response.text})
     except Exception as ex:
         return JSONResponse(status_code=500, content={"error": str(ex)})
+    
+
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/upload-audio/")
+async def upload_audio(file: UploadFile = File(...)):
+    file_location = f"{UPLOAD_DIR}/{file.filename}"
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size": os.path.getsize(file_location)
+    }
 
