@@ -7,10 +7,14 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 import httpx
+import assemblyai as aai
+import tempfile
+from fastapi.concurrency import run_in_threadpool
 
 # Load Murf API key from .env
 load_dotenv()
 MURF_API_KEY = os.getenv("MURF_API_KEY")
+aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
 
 app = FastAPI()
 
@@ -94,3 +98,32 @@ async def upload_audio(file: UploadFile = File(...)):
         "size": os.path.getsize(file_location)
     }
 
+
+# Initialize Transcriber
+transcriber = aai.Transcriber()
+
+# Define config with SLAM-1 model
+config = aai.TranscriptionConfig(
+    speech_model=aai.SpeechModel.slam_1
+)
+
+@app.post("/transcribe/file")
+async def transcribe_audio(file: UploadFile = File(...)):
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+            contents = await file.read()
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        # Run the blocking transcription in a thread
+        transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
+
+        # Remove temp file
+        os.remove(tmp_path)
+
+        # Return response
+        return {"transcription": transcript.text}
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})

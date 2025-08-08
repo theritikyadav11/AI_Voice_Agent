@@ -85,7 +85,7 @@ if (navigator.mediaDevices.getUserMedia) {
       clipContainer.classList.add("clip");
       audio.setAttribute("controls", "");
       deleteButton.textContent = "Delete";
-      uploadButton.textContent = "Upload";
+      uploadButton.textContent = "Transcribe";
       deleteButton.className = "delete";
       uploadButton.className = "upload";
 
@@ -118,21 +118,26 @@ if (navigator.mediaDevices.getUserMedia) {
         const formData = new FormData();
         formData.append("file", blob, fileName);
 
-        fetch("http://127.0.0.1:8000/upload-audio/", {
+        fetch("http://127.0.0.1:8000/transcribe/file", {
           method: "POST",
           body: formData,
         })
-          .then((response) => response.json())
+          .then((res) => res.json())
           .then((data) => {
-            const fileSizeKB = (data.size / 1024).toFixed(2);
-            showFlashMessage(
-              `${data.filename} (${fileSizeKB} KB) uploaded successfully`
-            );
-            console.log("Upload successful", data);
+            const resultDiv = document.getElementById("transcription-result");
+            if (data.transcription) {
+              resultDiv.textContent = `Transcription: ${data.transcription}`;
+              resultDiv.style.color = "black";
+            } else {
+              resultDiv.textContent = "❌ Transcription failed.";
+              resultDiv.style.color = "red";
+            }
           })
-          .catch((error) => {
-            showFlashMessage("Upload failed.", true);
-            console.error("Upload error:", error);
+          .catch((err) => {
+            console.error("Transcription error:", err);
+            const resultDiv = document.getElementById("transcription-result");
+            resultDiv.textContent = "Transcription error.";
+            resultDiv.style.color = "red";
           });
       };
     };
