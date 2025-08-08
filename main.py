@@ -127,3 +127,56 @@ async def transcribe_audio(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+    
+
+@app.post("/tts/echo")
+async def echo_with_murf(file: UploadFile = File(...)):
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+            contents = await file.read()
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        # Transcribe the audio
+        transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
+
+        # Clean up the temporary file
+        os.remove(tmp_path)
+
+        transcribed_text = transcript.text
+
+        if not MURF_API_KEY:
+            return JSONResponse(status_code=500, content={"error": "MURF_API_KEY not set"})
+
+        # Prepare Murf API call
+        headers = {
+            "api-key": MURF_API_KEY,
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "text": transcribed_text,
+            "voiceId": "en-US-natalie",  # or any Murf voice ID
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.murf.ai/v1/speech/generate",
+                headers=headers,
+                json=payload
+            )
+
+        response.raise_for_status()
+        murf_data = response.json()
+
+        # Return the audio URL back to frontend
+        return {
+            "transcription": transcribed_text,
+            "audio_url": murf_data.get("audioFile")
+        }
+
+    except httpx.HTTPStatusError as e:
+        return JSONResponse(status_code=e.response.status_code, content={"error": e.response.text})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
