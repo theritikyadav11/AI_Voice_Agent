@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, File, UploadFile
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +10,8 @@ import httpx
 import assemblyai as aai
 import tempfile
 from fastapi.concurrency import run_in_threadpool
+from google import genai
+from google.genai import types
 
 # Load Murf API key from .env
 load_dotenv()
@@ -180,3 +182,34 @@ async def echo_with_murf(file: UploadFile = File(...)):
         return JSONResponse(status_code=e.response.status_code, content={"error": e.response.text})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# Integrating a Large Language Model
+
+class QueryRequest(BaseModel):
+    text: str
+    model: str = "gemini-2.5-flash"
+    temperature: float = 0.7
+    max_tokens: int = 1024
+
+
+# object of genai
+client = genai.Client()
+
+@app.post("/llm/query")
+async def query_llm(query: QueryRequest):
+    try:
+        # Call Gemini API
+        response = client.models.generate_content(
+            model=query.model,
+            contents=[query.text],
+            config=types.GenerateContentConfig(
+                temperature=query.temperature,
+                max_output_tokens=query.max_tokens
+            )
+        )
+        
+        return {"response": response.text}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
