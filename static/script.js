@@ -311,3 +311,69 @@ window.onresize = function () {
   canvas.width = mainSection.offsetWidth;
 };
 window.onresize();
+
+// voice chat-bot
+
+let mediaRecorder;
+let audioChunks = [];
+
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const responseText = document.getElementById("responseText");
+const responseAudio = document.getElementById("responseAudio");
+
+startBtn.addEventListener("click", async () => {
+  audioChunks = [];
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) {
+      audioChunks.push(event.data);
+    }
+  };
+
+  mediaRecorder.start();
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  responseText.textContent = "Recording...";
+});
+
+stopBtn.addEventListener("click", () => {
+  mediaRecorder.stop();
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+
+  mediaRecorder.onstop = async () => {
+    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+    const formData = new FormData();
+    formData.append("file", audioBlob, "recording.webm"); // match backend's UploadFile name
+
+    responseText.textContent = "Processing...";
+
+    try {
+      const res = await fetch("/llm/query", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Show transcription + LLM output
+      responseText.textContent = `You said: "${data.transcription}`;
+
+      // Play Murf-generated audio
+      if (data.audio_url) {
+        responseAudio.src = data.audio_url;
+        responseAudio.play();
+      }
+    } catch (err) {
+      console.error(err);
+      responseText.textContent = "Error communicating with server.";
+    }
+  };
+});

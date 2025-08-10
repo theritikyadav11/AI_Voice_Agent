@@ -100,7 +100,6 @@ async def upload_audio(file: UploadFile = File(...)):
         "size": os.path.getsize(file_location)
     }
 
-
 # Initialize Transcriber
 transcriber = aai.Transcriber()
 
@@ -112,19 +111,15 @@ config = aai.TranscriptionConfig(
 @app.post("/transcribe/file")
 async def transcribe_audio(file: UploadFile = File(...)):
     try:
-        # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
             contents = await file.read()
             tmp.write(contents)
             tmp_path = tmp.name
 
-        # Run the blocking transcription in a thread
         transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
 
-        # Remove temp file
         os.remove(tmp_path)
 
-        # Return response
         return {"transcription": transcript.text}
 
     except Exception as e:
@@ -134,16 +129,13 @@ async def transcribe_audio(file: UploadFile = File(...)):
 @app.post("/tts/echo")
 async def echo_with_murf(file: UploadFile = File(...)):
     try:
-        # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
             contents = await file.read()
             tmp.write(contents)
             tmp_path = tmp.name
 
-        # Transcribe the audio
         transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
 
-        # Clean up the temporary file
         os.remove(tmp_path)
 
         transcribed_text = transcript.text
@@ -151,7 +143,6 @@ async def echo_with_murf(file: UploadFile = File(...)):
         if not MURF_API_KEY:
             return JSONResponse(status_code=500, content={"error": "MURF_API_KEY not set"})
 
-        # Prepare Murf API call
         headers = {
             "api-key": MURF_API_KEY,
             "Content-Type": "application/json"
@@ -159,7 +150,7 @@ async def echo_with_murf(file: UploadFile = File(...)):
 
         payload = {
             "text": transcribed_text,
-            "voiceId": "en-US-natalie",  # or any Murf voice ID
+            "voiceId": "en-US-natalie",
         }
 
         async with httpx.AsyncClient() as client:
@@ -172,7 +163,6 @@ async def echo_with_murf(file: UploadFile = File(...)):
         response.raise_for_status()
         murf_data = response.json()
 
-        # Return the audio URL back to frontend
         return {
             "transcription": transcribed_text,
             "audio_url": murf_data.get("audioFile")
@@ -185,21 +175,17 @@ async def echo_with_murf(file: UploadFile = File(...)):
 
 
 # Integrating a Large Language Model
-
 class QueryRequest(BaseModel):
     text: str
     model: str = "gemini-2.5-flash"
     temperature: float = 0.7
     max_tokens: int = 1024
 
-
-# object of genai
 client = genai.Client()
 
-@app.post("/llm/query")
+@app.post("/llm/query-text")
 async def query_llm(query: QueryRequest):
     try:
-        # Call Gemini API
         response = client.models.generate_content(
             model=query.model,
             contents=[query.text],
@@ -211,5 +197,68 @@ async def query_llm(query: QueryRequest):
         
         return {"response": response.text}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# NEW ROUTE: /llm/query (Audio → Text → LLM → Murf → Audio)
+@app.post("/llm/query")
+async def llm_query_audio(file: UploadFile = File(...)):
+    try:
+        # Save uploaded audio temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+            contents = await file.read()
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        # Step 1: Transcribe audio
+        transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
+        os.remove(tmp_path)
+        transcribed_text = transcript.text
+
+        if not transcribed_text.strip():
+            return JSONResponse(status_code=400, content={"error": "No speech detected."})
+
+        # Step 2: Get LLM response
+        llm_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[transcribed_text],
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                max_output_tokens=1024
+            )
+        )
+        generated_text = llm_response.text
+
+        # Step 3: Convert LLM text to audio via Murf
+        if not MURF_API_KEY:
+            return JSONResponse(status_code=500, content={"error": "MURF_API_KEY not set"})
+
+        headers = {
+            "api-key": MURF_API_KEY,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "text": generated_text,
+            "voiceId": "en-US-natalie"
+        }
+
+        async with httpx.AsyncClient() as client_http:
+            murf_res = await client_http.post(
+                "https://api.murf.ai/v1/speech/generate",
+                headers=headers,
+                json=payload
+            )
+        murf_res.raise_for_status()
+        murf_data = murf_res.json()
+
+        return {
+            "transcription": transcribed_text,
+            "llm_text": generated_text,
+            "audio_url": murf_data.get("audioFile")
+        }
+
+    except httpx.HTTPStatusError as e:
+        return JSONResponse(status_code=e.response.status_code, content={"error": e.response.text})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
