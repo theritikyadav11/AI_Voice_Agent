@@ -312,33 +312,73 @@ window.onresize = function () {
 };
 window.onresize();
 
-// voice chat-bot
+// ========================
+// Get or Create Session ID
+// ========================
+function getSessionId() {
+  const params = new URLSearchParams(window.location.search);
+  let sessionId = params.get("session_id");
+  if (!sessionId) {
+    sessionId = crypto.randomUUID(); // Generate unique session
+    params.set("session_id", sessionId);
+    window.location.search = params.toString(); // Reload with session_id
+  }
+  return sessionId;
+}
 
+const sessionId = getSessionId();
+
+// ========================
+// DOM Elements
+// ========================
 let mediaRecorder;
 let audioChunks = [];
-
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
 const responseText = document.getElementById("responseText");
 const responseAudio = document.getElementById("responseAudio");
+const chatHistoryDiv = document.getElementById("chatHistory");
+const sessionIdDisplay = document.getElementById("sessionIdDisplay");
+const deleteSessionBtn = document.getElementById("deleteSessionBtn");
 
+// Display current session ID in UI
+sessionIdDisplay.textContent = sessionId;
+
+// ========================
+// Render Chat History
+// ========================
+function renderChatHistory(history) {
+  chatHistoryDiv.innerHTML = "";
+  if (!history || history.length === 0) {
+    chatHistoryDiv.innerHTML = `<p class="empty">No messages yet...</p>`;
+    return;
+  }
+  history.forEach((msg) => {
+    const div = document.createElement("div");
+    div.textContent = `${msg.role}: ${msg.text}`;
+    chatHistoryDiv.appendChild(div);
+  });
+}
+
+// ========================
+// Start Recording
+// ========================
 startBtn.addEventListener("click", async () => {
   audioChunks = [];
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   mediaRecorder = new MediaRecorder(stream);
-
   mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      audioChunks.push(event.data);
-    }
+    if (event.data.size > 0) audioChunks.push(event.data);
   };
-
   mediaRecorder.start();
   startBtn.disabled = true;
   stopBtn.disabled = false;
   responseText.textContent = "Recording...";
 });
 
+// ========================
+// Stop Recording and Send to API
+// ========================
 stopBtn.addEventListener("click", () => {
   mediaRecorder.stop();
   startBtn.disabled = false;
@@ -347,26 +387,29 @@ stopBtn.addEventListener("click", () => {
   mediaRecorder.onstop = async () => {
     const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
     const formData = new FormData();
-    formData.append("file", audioBlob, "recording.webm"); // match backend's UploadFile name
+    formData.append("file", audioBlob, "recording.webm");
 
     responseText.textContent = "Processing...";
 
     try {
-      const res = await fetch("/llm/query", {
+      const res = await fetch(`/agent/chat/${sessionId}`, {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
       const data = await res.json();
 
-      // Show transcription + LLM output
-      responseText.textContent = `You said: "${data.transcription}`;
+      // Display transcription
+      responseText.textContent = `You said: "${data.transcription}"`;
 
-      // Play Murf-generated audio
+      // Render chat history
+      if (data.history) {
+        renderChatHistory(data.history);
+      }
+
+      // Play bot response audio (no auto-record now)
       if (data.audio_url) {
         responseAudio.src = data.audio_url;
         responseAudio.play();
@@ -376,4 +419,27 @@ stopBtn.addEventListener("click", () => {
       responseText.textContent = "Error communicating with server.";
     }
   };
+});
+
+// ========================
+// Delete Session Handler
+// ========================
+deleteSessionBtn.addEventListener("click", async () => {
+  if (!confirm("Are you sure you want to delete this session?")) return;
+
+  try {
+    const res = await fetch(`/agent/chat/${sessionId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+    // Clear chat history in UI
+    renderChatHistory([]);
+
+    alert("Session deleted successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting session.");
+  }
 });

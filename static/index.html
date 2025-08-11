@@ -17,6 +17,37 @@
         z-index: 1000;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
       }
+      .chat-history {
+        margin-top: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        /* background: #fafafa; */
+        border-radius: 8px;
+        max-height: 250px;
+        overflow-y: auto;
+        font-family: Arial, sans-serif;
+      }
+
+      .chat-history .empty {
+        color: black;
+        font-style: italic;
+      }
+
+      .chat-history div {
+        padding: 5px 8px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+      }
+
+      .chat-history div:nth-child(odd) {
+        background: #e3f2fd; /* Light blue for user */
+        color: black;
+      }
+
+      .chat-history div:nth-child(even) {
+        background: #f1f8e9; /* Light green for assistant */
+        color: black;
+      }
     </style>
     <link href="static/style.css" rel="stylesheet" />
     <link
@@ -82,14 +113,40 @@
         <div id="flash-message">Audio uploaded successfully</div>
       </div>
 
-      <!-- Voice Chat-bot -->
+      <!-- Voice Chat-Bot -->
       <div class="container">
         <h1>Voice Chat-Bot</h1>
+
+        <!-- Session Info Row -->
+        <div id="sessionInfo" style="margin-bottom: 10px">
+          <span>Session ID: <strong id="sessionIdDisplay"></strong></span>
+          <button
+            id="deleteSessionBtn"
+            style="
+              margin-left: 10px;
+              background: #e74c3c;
+              color: white;
+              border: none;
+              padding: 5px 10px;
+              cursor: pointer;
+              border-radius: 4px;
+            "
+          >
+            Delete Session
+          </button>
+        </div>
+
         <button id="startBtn" class="start-btn">Start Recording</button>
         <button id="stopBtn" class="stop-btn" disabled>Stop Recording</button>
 
         <div id="responseText">Response will appear here...</div>
+
         <audio id="responseAudio" controls></audio>
+
+        <h3>Chat-History</h3>
+        <div id="chatHistory" class="chat-history">
+          <p class="empty">No messages yet...</p>
+        </div>
       </div>
     </div>
 

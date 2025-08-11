@@ -201,6 +201,10 @@ async def query_llm(query: QueryRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Simple in-memory chat history store
+chat_history = {}  # {session_id: [{"role": "user", "text": ...}, {"role": "assistant", "text": ...}]}
+
+
 # NEW ROUTE: /llm/query (Audio → Text → LLM → Murf → Audio)
 @app.post("/llm/query")
 async def llm_query_audio(file: UploadFile = File(...)):
@@ -262,3 +266,78 @@ async def llm_query_audio(file: UploadFile = File(...)):
         return JSONResponse(status_code=e.response.status_code, content={"error": e.response.text})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.post("/agent/chat/{session_id}")
+async def agent_chat(session_id: str, file: UploadFile = File(...)):
+    try:
+        # Step 1: Transcribe audio
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+            contents = await file.read()
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
+        os.remove(tmp_path)
+        user_message = transcript.text.strip()
+
+        if not user_message:
+            return JSONResponse(status_code=400, content={"error": "No speech detected."})
+
+        # Step 2: Add user message to history
+        if session_id not in chat_history:
+            chat_history[session_id] = []
+        chat_history[session_id].append({"role": "user", "text": user_message})
+
+        # Step 3: Combine previous history into prompt
+        full_conversation = "\n".join([f"{m['role']}: {m['text']}" for m in chat_history[session_id]])
+        
+        # Step 4: Get LLM response
+        llm_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[full_conversation],
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                max_output_tokens=1024
+            )
+        )
+        bot_reply = llm_response.text
+
+        # Step 5: Add assistant message to history
+        chat_history[session_id].append({"role": "assistant", "text": bot_reply})
+
+        # Step 6: Convert LLM reply to speech
+        headers = {
+            "api-key": MURF_API_KEY,
+            "Content-Type": "application/json"
+        }
+        payload = {"text": bot_reply, "voiceId": "en-US-natalie"}
+
+        async with httpx.AsyncClient() as client_http:
+            murf_res = await client_http.post(
+                "https://api.murf.ai/v1/speech/generate",
+                headers=headers,
+                json=payload
+            )
+        murf_res.raise_for_status()
+        murf_data = murf_res.json()
+
+        return {
+            "session_id": session_id,
+            "transcription": user_message,
+            "llm_text": bot_reply,
+            "audio_url": murf_data.get("audioFile"),
+            "history": chat_history[session_id]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/agent/chat/{session_id}")
+async def delete_chat_session(session_id: str):
+    if session_id in chat_history:
+        del chat_history[session_id]
+        return {"message": "Session deleted successfully"}
+    return {"message": "Session not found"}
