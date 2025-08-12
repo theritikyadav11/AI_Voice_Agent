@@ -312,6 +312,8 @@ window.onresize = function () {
 };
 window.onresize();
 
+// Voice chat-bot
+
 // ========================
 // Get or Create Session ID
 // ========================
@@ -409,14 +411,17 @@ stopBtn.addEventListener("click", () => {
         renderChatHistory(data.history);
       }
 
-      // Play bot response audio (no auto-record now)
+      // Play bot response audio
       if (data.audio_url) {
         responseAudio.src = data.audio_url;
         responseAudio.play();
       }
     } catch (err) {
       console.error(err);
-      responseText.textContent = "Error communicating with server.";
+      responseText.textContent = "I'm having trouble connecting right now.";
+      // Use fallback audio
+      responseAudio.src = "/static/tts_fallback.wav";
+      responseAudio.play();
     }
   };
 });

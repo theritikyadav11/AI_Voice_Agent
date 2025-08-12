@@ -272,67 +272,85 @@ async def llm_query_audio(file: UploadFile = File(...)):
 @app.post("/agent/chat/{session_id}")
 async def agent_chat(session_id: str, file: UploadFile = File(...)):
     try:
-        # Step 1: Transcribe audio
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-            contents = await file.read()
-            tmp.write(contents)
-            tmp_path = tmp.name
-
-        transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
-        os.remove(tmp_path)
-        user_message = transcript.text.strip()
-
-        if not user_message:
-            return JSONResponse(status_code=400, content={"error": "No speech detected."})
+        # Step 1: Transcribe audio (STT)
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+                contents = await file.read()
+                tmp.write(contents)
+                tmp_path = tmp.name
+            transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
+            os.remove(tmp_path)
+            user_message = transcript.text.strip()
+            if not user_message:
+                return JSONResponse(status_code=400, content={"error": "No speech detected."})
+        except Exception as e:
+            print("STT Error:", e)
+            user_message = ""
+            bot_reply = "I'm having trouble understanding you right now."
 
         # Step 2: Add user message to history
         if session_id not in chat_history:
             chat_history[session_id] = []
         chat_history[session_id].append({"role": "user", "text": user_message})
 
-        # Step 3: Combine previous history into prompt
-        full_conversation = "\n".join([f"{m['role']}: {m['text']}" for m in chat_history[session_id]])
-        
-        # Step 4: Get LLM response
-        llm_response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[full_conversation],
-            config=types.GenerateContentConfig(
-                temperature=0.7,
-                max_output_tokens=1024
-            )
-        )
-        bot_reply = llm_response.text
+        # Step 3: LLM Generation
+        if user_message:
+            try:
+                full_conversation = "\n".join([f"{m['role']}: {m['text']}" for m in chat_history[session_id]])
+                llm_response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[full_conversation],
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        max_output_tokens=1024
+                    )
+                )
+                bot_reply = llm_response.text
+            except Exception as e:
+                print("LLM Error:", e)
+                bot_reply = "I'm having trouble connecting right now."
+        else:
+            bot_reply = "I'm having trouble understanding you right now."
 
-        # Step 5: Add assistant message to history
         chat_history[session_id].append({"role": "assistant", "text": bot_reply})
 
-        # Step 6: Convert LLM reply to speech
-        headers = {
-            "api-key": MURF_API_KEY,
-            "Content-Type": "application/json"
-        }
-        payload = {"text": bot_reply, "voiceId": "en-US-natalie"}
-
-        async with httpx.AsyncClient() as client_http:
-            murf_res = await client_http.post(
-                "https://api.murf.ai/v1/speech/generate",
-                headers=headers,
-                json=payload
-            )
-        murf_res.raise_for_status()
-        murf_data = murf_res.json()
+        # Step 4: Text-to-Speech
+        try:
+            headers = {"api-key": MURF_API_KEY, "Content-Type": "application/json"}
+            payload = {"text": bot_reply, "voiceId": "en-US-natalie"}
+            async with httpx.AsyncClient() as client_http:
+                murf_res = await client_http.post(
+                    "https://api.murf.ai/v1/speech/generate",
+                    headers=headers,
+                    json=payload
+                )
+            murf_res.raise_for_status()
+            murf_data = murf_res.json()
+            audio_url = murf_data.get("audioFile")
+        except Exception as e:
+            print("TTS Error:", e)
+            # Use a fallback audio file URL (pre-generated, e.g., S3 bucket/static)
+            audio_url = "/static/tts_fallback.wav"
 
         return {
             "session_id": session_id,
             "transcription": user_message,
             "llm_text": bot_reply,
-            "audio_url": murf_data.get("audioFile"),
+            "audio_url": audio_url,
             "history": chat_history[session_id]
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print("General Error:", e)
+        # Final Catch-All fallback
+        return {
+            "session_id": session_id,
+            "transcription": "",
+            "llm_text": "I'm having trouble connecting right now.",
+            "audio_url": "/static/tts_fallback.wav",
+            "history": chat_history.get(session_id, [])
+        }
+
 
 
 @app.delete("/agent/chat/{session_id}")
