@@ -69,3 +69,11 @@ This setup is ideal for building:
 ---
 
 ## 📂 Project Structure
+```Agent/
+│ ├── index.html
+│ ├── main.py
+│ ├── script.js
+│ ├── style.css
+├── .env
+├── requirement.txt
+├── README.md```
