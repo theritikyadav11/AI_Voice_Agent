@@ -96,3 +96,32 @@ cd AI_Voice_Agent
 python -m venv .venv
 .venv\Scripts\activate
 ```
+### 3️⃣ Configure API Keys
+```bash
+MURF_API_KEY=your_murf_api_key
+ASSEMBLY_API_KEY=your_assemblyai_api_key
+GEMINI_API_KEY=your_gemini_api_key
+```
+### 4️⃣ Run the FastAPI Server
+```bash
+uvicorn main:app --reload
+```
+
+## 🚀 Usage
+
+1. Start the FastAPI server as described above.
+2. Open `http:localhost:8000` in the browser.
+3. Grant microphone access.
+4. Speak into your mic — your speech will be transcribed, processed by **Gemini**, and played back with **Murf AI's** voice.
+
+
+## 🙌 Special Thanks
+
+Huge thanks to **Murf AI** for organizing this challenge and encouraging developers to explore the world of voice-first interfaces.  
+Your tools are enabling the next generation of interactive agents 💜
+
+## 📜 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+
