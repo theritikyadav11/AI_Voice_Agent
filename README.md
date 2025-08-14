@@ -1,4 +1,4 @@
-# **AI Voice Agent**
+# **AI VoxAgent**
 
 An interactive voice-first AI application powered by **Murf AI**, **AssemblyAI**, and **Google Gemini API**, built with **FastAPI** for the backend and a lightweight HTML/CSS/JavaScript frontend. This agent enables real-time speech capture, transcription, AI-based conversation, and natural-sounding voice responses.
 
@@ -12,9 +12,7 @@ An interactive voice-first AI application powered by **Murf AI**, **AssemblyAI**
 - [Tools Used](#tools-used)
 - [Project Structure](#project-structure)
 - [Installation & Setup](#installation--setup)
-- [Configuration](#configuration)
 - [Usage](#usage)
-- [Troubleshooting](#troubleshooting)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -79,6 +77,7 @@ AI_VOICE_AGENT/
 ├── .env
 ├── main.py
 └── README.md
+
 ```
 
 
@@ -110,7 +109,7 @@ uvicorn main:app --reload
 ## 🚀 Usage
 
 1. Start the FastAPI server as described above.
-2. Open `http:localhost:8000` in the browser.
+2. Open `http://localhost:8000` in the browser.
 3. Grant microphone access.
 4. Speak into your mic — your speech will be transcribed, processed by **Gemini**, and played back with **Murf AI's** voice.
 
