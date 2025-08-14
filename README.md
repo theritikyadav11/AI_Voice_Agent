@@ -69,11 +69,30 @@ This setup is ideal for building:
 ---
 
 ## 📂 Project Structure
-```Agent/
+```
+AI_VOICE_AGENT/
+├── static/
 │ ├── index.html
-│ ├── main.py
 │ ├── script.js
 │ ├── style.css
+├── uploads/
 ├── .env
-├── requirement.txt
-├── README.md```
+├── main.py
+└── README.md
+```
+
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/theritikyadav11/AI_Voice_Agent.git
+cd AI_Voice_Agent
+```
+### 2️⃣ Create and Activate Virtual Environment
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
