@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException, Request, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import shutil
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import shutil
 import os
 import httpx
 import assemblyai as aai
@@ -13,16 +13,22 @@ from fastapi.concurrency import run_in_threadpool
 from google import genai
 from google.genai import types
 
-# Load Murf API key from .env
+# ========================
+# Environment Setup
+# ========================
 load_dotenv()
 MURF_API_KEY = os.getenv("MURF_API_KEY")
 aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
-print("AssemblyAI API Key:", os.getenv("ASSEMBLYAI_API_KEY"))  # For debug, remove later
 
+print("AssemblyAI API Key:", os.getenv("ASSEMBLYAI_API_KEY"))
+print("Murf API Key:", "SET" if MURF_API_KEY else "NOT SET")
 
+# ========================
+# FastAPI App
+# ========================
 app = FastAPI()
 
-# Allow frontend requests
+# Allow frontend requests (CORS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,8 +36,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files (your HTML & JS)
+# Static folder for frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/")
 def read_index():
@@ -271,19 +278,18 @@ class TTSRequest(BaseModel):
 
 
 
-# Simple in-memory chat history store
-chat_history = {}  # {session_id: [{"role": "user", "text": ...}, {"role": "assistant", "text": ...}]}
-
-
-# Initialize Transcriber
+# ========================
+# Transcription / STT Setup
+# ========================
 transcriber = aai.Transcriber()
 
-# Define config with SLAM-1 model
 config = aai.TranscriptionConfig(
     speech_model=aai.SpeechModel.slam_1
 )
 
-
+# ========================
+# LLM Setup
+# ========================
 class QueryRequest(BaseModel):
     text: str
     model: str = "gemini-2.5-flash"
@@ -292,10 +298,18 @@ class QueryRequest(BaseModel):
 
 client = genai.Client()
 
+# ========================
+# Chat Memory
+# ========================
+chat_history = {}  # {session_id: [{"role":"...", "text":"..."}]}
+
+# ========================
+# Main Chat Endpoint
+# ========================
 @app.post("/agent/chat/{session_id}")
 async def agent_chat(session_id: str, file: UploadFile = File(...)):
     try:
-        # Step 1: Transcribe audio (STT)
+        # -------- Step 1: Speech-to-Text --------
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
                 contents = await file.read()
@@ -303,6 +317,7 @@ async def agent_chat(session_id: str, file: UploadFile = File(...)):
                 tmp_path = tmp.name
             transcript = await run_in_threadpool(transcriber.transcribe, tmp_path, config=config)
             os.remove(tmp_path)
+
             user_message = transcript.text.strip()
             if not user_message:
                 return JSONResponse(status_code=400, content={"error": "No speech detected."})
@@ -311,15 +326,17 @@ async def agent_chat(session_id: str, file: UploadFile = File(...)):
             user_message = ""
             bot_reply = "I'm having trouble understanding you right now."
 
-        # Step 2: Add user message to history
+        # -------- Step 2: Add user message to history --------
         if session_id not in chat_history:
             chat_history[session_id] = []
         chat_history[session_id].append({"role": "user", "text": user_message})
 
-        # Step 3: LLM Generation
+        # -------- Step 3: LLM Response --------
         if user_message:
             try:
-                full_conversation = "\n".join([f"{m['role']}: {m['text']}" for m in chat_history[session_id]])
+                full_conversation = "\n".join(
+                    [f"{m['role']}: {m['text']}" for m in chat_history[session_id]]
+                )
                 llm_response = client.models.generate_content(
                     model="gemini-2.5-flash",
                     contents=[full_conversation],
@@ -337,10 +354,18 @@ async def agent_chat(session_id: str, file: UploadFile = File(...)):
 
         chat_history[session_id].append({"role": "assistant", "text": bot_reply})
 
-        # Step 4: Text-to-Speech
+        # -------- Step 4: Text-to-Speech (Murf) --------
         try:
+            if not MURF_API_KEY:
+                raise Exception("MURF_API_KEY not set in environment!")
+
             headers = {"api-key": MURF_API_KEY, "Content-Type": "application/json"}
-            payload = {"text": bot_reply, "voiceId": "en-US-natalie"}
+            payload = {
+                "voiceId": "en-US-natalie",
+                "text": bot_reply,
+                "format": "mp3"   # ✅ REQUIRED
+            }
+
             async with httpx.AsyncClient() as client_http:
                 murf_res = await client_http.post(
                     "https://api.murf.ai/v1/speech/generate",
@@ -349,10 +374,15 @@ async def agent_chat(session_id: str, file: UploadFile = File(...)):
                 )
             murf_res.raise_for_status()
             murf_data = murf_res.json()
+
+            print("Murf Response:", murf_data)  # Debug log
+
             audio_url = murf_data.get("audioFile")
+            if not audio_url:
+                audio_url = "/static/tts_fallback.wav"
+
         except Exception as e:
             print("TTS Error:", e)
-            # Use a fallback audio file URL (pre-generated, e.g., S3 bucket/static)
             audio_url = "/static/tts_fallback.wav"
 
         return {
@@ -365,7 +395,6 @@ async def agent_chat(session_id: str, file: UploadFile = File(...)):
 
     except Exception as e:
         print("General Error:", e)
-        # Final Catch-All fallback
         return {
             "session_id": session_id,
             "transcription": "",
@@ -375,7 +404,9 @@ async def agent_chat(session_id: str, file: UploadFile = File(...)):
         }
 
 
-
+# ========================
+# Delete Chat Session
+# ========================
 @app.delete("/agent/chat/{session_id}")
 async def delete_chat_session(session_id: str):
     if session_id in chat_history:
