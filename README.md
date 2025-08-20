@@ -1,4 +1,4 @@
-# **AI Voice Agent**
+# **AI VoxAgent**
 
 An interactive voice-first AI application powered by **Murf AI**, **AssemblyAI**, and **Google Gemini API**, built with **FastAPI** for the backend and a lightweight HTML/CSS/JavaScript frontend. This agent enables real-time speech capture, transcription, AI-based conversation, and natural-sounding voice responses.
 
@@ -12,9 +12,7 @@ An interactive voice-first AI application powered by **Murf AI**, **AssemblyAI**
 - [Tools Used](#tools-used)
 - [Project Structure](#project-structure)
 - [Installation & Setup](#installation--setup)
-- [Configuration](#configuration)
 - [Usage](#usage)
-- [Troubleshooting](#troubleshooting)
 - [Special Thanks](#special-thanks)
 - [License](#license)
 
@@ -69,3 +67,60 @@ This setup is ideal for building:
 ---
 
 ## 📂 Project Structure
+```
+AI_VOICE_AGENT/
+├── static/
+│ ├── index.html
+│ ├── script.js
+│ ├── style.css
+├── uploads/
+├── .env
+├── main.py
+└── README.md
+
+```
+
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/theritikyadav11/AI_Voice_Agent.git
+cd AI_Voice_Agent
+```
+### 2️⃣ Create and Activate Virtual Environment
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+### 3️⃣ Configure API Keys
+```bash
+MURF_API_KEY=your_murf_api_key
+ASSEMBLY_API_KEY=your_assemblyai_api_key
+GEMINI_API_KEY=your_gemini_api_key
+```
+### 4️⃣ Run the FastAPI Server
+```bash
+uvicorn main:app --reload
+```
+
+## 🚀 Usage
+
+1. Start the FastAPI server as described above.
+2. Open `http://localhost:8000` in the browser.
+3. Grant microphone access.
+4. Speak into your mic — your speech will be transcribed, processed by **Gemini**, and played back with **Murf AI's** voice.
+
+
+## 🙌 Special Thanks
+
+Huge thanks to **Murf AI** for organizing this challenge and encouraging developers to explore the world of voice-first interfaces.  
+Your tools are enabling the next generation of interactive agents 💜
+
+## 📜 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+
