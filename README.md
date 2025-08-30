@@ -6,7 +6,7 @@
 <br/>
 _Built for the [30 Days of AI Voice Agents Challenge by Murf AI](https://murf.ai/studio)_
 
-[![Live Demo](https://img.shields.io/badge/🎤_Live_Demo-Try_A.R.I.A-blue?style=for-the-badge)](https://ai-voice-agent-8fw8.onrender.com/)
+[![Live Demo](https://img.shields.io/badge/](https://ai-voice-agent-8fw8.onrender.com/)
 
 </div>
 
