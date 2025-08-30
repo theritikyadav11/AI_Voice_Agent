@@ -7,7 +7,6 @@
 _Built for the [30 Days of AI Voice Agents Challenge by Murf AI](https://murf.ai/studio)_
 
 [![Live Demo](https://img.shields.io/badge/🎤_Live_Demo-Try_A.R.I.A-blue?style=for-the-badge)](https://ai-voice-agent-8fw8.onrender.com/)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/theritikyadav11/AI_Voice_Agent)
 
 </div>
 
@@ -18,8 +17,9 @@ _Built for the [30 Days of AI Voice Agents Challenge by Murf AI](https://murf.ai
 **🎥 VoiceIQ in Action**
 _Professional AI voice assistant with sophisticated conversation abilities_
 
-![Demo Screenshot](screenshot/demo1.jpg)
-![Demo Screenshot](screenshot/demo2.jpg)
+![Demo Screenshot](screenshot/demo1.PNG)
+![Demo Screenshot](screenshot/demo2.PNG)
+![Demo Screenshot](screenshot/demo3.PNG)
 
 </div>
 
@@ -364,6 +364,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-```
 
-```
