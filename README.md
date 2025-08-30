@@ -258,7 +258,7 @@ TAVILY_API_KEY=your_key_here
 
 ## 🎤 Live Demo
 
-**Try VoiceIQ now:** [https://ai-voice-agent-8fw8.onrender.com/](https://ai-voice-agent-8fw8.onrender.com/)
+**Try VoiceIQ now:** [https://ai-voice-agent-8fw8.onrender.com/](https://ai-voice-agent-dxun.onrender.com)
 
 _Note: The service may take 30-60 seconds to wake up from sleep on first visit._
 
