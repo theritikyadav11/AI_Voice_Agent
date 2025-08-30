@@ -2,155 +2,100 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>AI Voice Generator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      #flash-message {
-        display: none;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #4caf50;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 1000;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-      }
-      .chat-history {
-        margin-top: 15px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        /* background: #fafafa; */
-        border-radius: 8px;
-        max-height: 250px;
-        overflow-y: auto;
-        font-family: Arial, sans-serif;
-      }
-
-      .chat-history .empty {
-        color: black;
-        font-style: italic;
-      }
-
-      .chat-history div {
-        padding: 5px 8px;
-        margin-bottom: 6px;
-        border-radius: 6px;
-      }
-
-      .chat-history div:nth-child(odd) {
-        background: #e3f2fd; /* Light blue for user */
-        color: black;
-      }
-
-      .chat-history div:nth-child(even) {
-        background: #f1f8e9; /* Light green for assistant */
-        color: black;
-      }
-    </style>
-    <link href="static/style.css" rel="stylesheet" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
+    <title>Realtime AI Voice Assistant</title>
+    <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
-    <div class="main">
-      <!-- Text to speech part
-      <div class="container">
-        <h1>AI Voice Generator 🎙</h1>
+    <div class="app-container">
+      <h1>Realtime AI Voice Assistant</h1>
 
-        <textarea
-          id="textInput"
-          placeholder="Enter your message here..."
-        ></textarea>
-
-        <button id="generateBtn" onclick="generateAudio()">
-          Generate Audio
+      <div class="controls">
+        <button id="recordBtn" class="record-btn">
+          <span id="recordBtnText">Record</span>
         </button>
-
-        <div class="loader" id="loader" style="display: none"></div>
-
-        <div id="audioContainer" style="display: none">
-          <h3>🔊 Your AI Audio:</h3>
-          <audio id="audioPlayer" controls></audio>
-        </div>
+        <button id="stopAudioBtn" class="stop-audio-btn" style="display: none">
+          Stop
+        </button>
+        <button id="configBtn" class="config-btn">Config</button>
       </div>
 
-      <!-- Echo Bot -->
-      <!-- <div class="wrapper" id="echo-bot">
-        <header>
-          <h1>Echo Bot</h1>
-        </header>
+      <div id="status" class="status">Ready to start</div>
+      <div>
+        <span id="websocket-status" class="websocket-status"
+          >WebSocket: Disconnected</span
+        >
+        <span
+          id="transcription-status"
+          class="transcription-status"
+          style="margin-left: 20px"
+          >Transcription: Inactive</span
+        >
+      </div>
 
-        <section class="main-controls">
-          <canvas class="visualizer" height="60px"></canvas>
-          <div id="buttons">
-            <button class="record">Record</button>
-            <button class="stop">Stop</button>
+      <canvas id="audioVisualizer" width="200" height="200"></canvas>
+
+      <section id="conversation-log" class="conversation-log"></section>
+
+      <section id="transcription-container" style="display: none">
+        <div id="transcriptionOutput"></div>
+      </section>
+
+      <section id="llm-response-container" style="display: none">
+        <div id="llmResponseOutput"></div>
+      </section>
+
+      <audio id="responseAudio" style="display: none"></audio>
+
+      <dialog id="configDialog" class="slidein-right">
+        <form method="dialog" class="config-form">
+          <h3>Enter API Keys</h3>
+          <div class="config-grid vertical">
+            <label class="config-field">
+              <span>Murf API Key</span>
+              <input id="murfKey" type="password" placeholder="MURF_API_KEY" />
+            </label>
+            <label class="config-field">
+              <span>AssemblyAI API Key</span>
+              <input
+                id="assemblyKey"
+                type="password"
+                placeholder="ASSEMBLYAI_API_KEY"
+              />
+            </label>
+            <label class="config-field">
+              <span>Tavily API Key</span>
+              <input
+                id="tavilyKey"
+                type="password"
+                placeholder="TAVILY_API_KEY"
+              />
+            </label>
+            <label class="config-field">
+              <span>Gemini API Key</span>
+              <input
+                id="geminiKey"
+                type="password"
+                placeholder="GEMINI_API_KEY"
+              />
+            </label>
           </div>
-        </section>
-
-        <section class="sound-clips"></section>
-
-        <div
-          id="transcription-result"
-          style="
-            margin-top: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            background-color: white;
-            font-weight: 500;
-            font-size: 1rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); /* slightly stronger shadow */
-            max-width: 600px;
-            line-height: 1.6;
-            word-break: break-word;
-          "
-        ></div>
-
-        <div id="flash-message">Audio uploaded successfully</div>
-      </div> -->
-      -->
-
-      <!-- Voice Chat-Bot -->
-      <div class="container">
-        <h1>Voice Chat-Bot</h1>
-
-        <!-- Session Info Row -->
-        <div id="sessionInfo" style="margin-bottom: 10px">
-          <span>Session ID: <strong id="sessionIdDisplay"></strong></span>
-          <button
-            id="deleteSessionBtn"
-            style="
-              margin-left: 10px;
-              background: #e74c3c;
-              color: white;
-              border: none;
-              padding: 5px 10px;
-              cursor: pointer;
-              border-radius: 4px;
-            "
-          >
-            Delete Session
-          </button>
-        </div>
-
-        <button id="startBtn" class="start-btn">Start Recording</button>
-        <button id="stopBtn" class="stop-btn" disabled>Stop Recording</button>
-
-        <div id="responseText">Response will appear here...</div>
-
-        <audio id="responseAudio" controls></audio>
-
-        <h3>Chat-History</h3>
-        <div id="chatHistory" class="chat-history">
-          <p class="empty">No messages yet...</p>
-        </div>
-      </div>
+          <menu class="config-actions">
+            <button id="cancelConfig" value="cancel" class="btn-secondary">
+              Cancel
+            </button>
+            <button
+              id="saveConfig"
+              value="default"
+              class="btn-primary"
+              disabled
+            >
+              Save
+            </button>
+          </menu>
+        </form>
+      </dialog>
     </div>
 
-    <script src="static/script.js"></script>
+    <script src="/static/script.js"></script>
   </body>
 </html>
